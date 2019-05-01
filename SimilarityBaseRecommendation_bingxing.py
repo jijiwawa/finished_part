@@ -18,10 +18,7 @@ class SimilarityBaseRecommendation(Recommendation):
         super(SimilarityBaseRecommendation, self).__init__(file, train_file, test_file)
         print('训练的评分矩阵：')
         print(self.trainMatrix.toarray())
-        # 生成每个用户评分了的物品集合 {user:[item1,item2]}
-        self.coItemDict = self.Generate_ratingItemDict_ForEachUser(self.trainMatrix)
-        print('用户评分了的物品集合：')
-        print(self.coItemDict)
+
         # 生成每个物品的评分集合 {item:[1.0,2.0]}
         self.itemRatingDict = self.Generate_ratingDict_ForEachItem(train_file)
         print('物品的评分集合：')
@@ -43,24 +40,17 @@ class SimilarityBaseRecommendation(Recommendation):
             os.getcwd() + '\\out_file\\userSimialrityMatrix_' + os.path.basename(train_file) + '_bingxing.npy')
         print(self.userSimilarityMatrix)
         # 生成评分矩阵
-        self.K = 4
-        while self.K <= 20:
+        self.K = 20
+        while self.K <= 100:
             self.predictMatrix = self.Generate_PredictRating_Matrix()
             np.save(os.getcwd() + '\\out_file\\predictMatrix_' + str(self.K) + '_' + os.path.basename(
                 train_file) + '_bingxing.npy',
                     self.predictMatrix)
             print('预测评分矩阵：')
             print(self.predictMatrix)
-            self.K += 4
+            self.K += 20
 
-    # 从评分矩阵中生成用户的评分了的物品列表 用户/物品
-    def Generate_ratingItemDict_ForEachUser(self, trainMatrix):
-        ratingItemList = dict()
-        for (userid, itemid) in trainMatrix.keys():
-            if userid not in ratingItemList.keys():
-                ratingItemList[userid] = set()
-            ratingItemList[userid].add(itemid)
-        return ratingItemList
+
 
     # 从csv中生成物品的评分字典  {物品id:{评分}}
     def Generate_ratingDict_ForEachItem(self, file):
@@ -225,10 +215,10 @@ class SimilarityBaseRecommendation(Recommendation):
         print("(%d,%d)用户对物品评分预测" % (u, i))
         print(time.strftime('%Y.%m.%d %H:%M:%S', time.localtime(time.time())))
         ave_u = sum(list(self.trainMatrix[u].toarray()[0])) / len(self.trainMatrix[u])
-        user_u_vertor = list(self.userSimilarityMatrix[u])
-        print(user_u_vertor)
+        # user_u_vertor = list(self.userSimilarityMatrix[u])
         # 前k相似用户result
-        result = list(map(user_u_vertor.index, heapq.nlargest(self.K, user_u_vertor)))
+        # result = list(map(user_u_vertor.index, heapq.nlargest(self.K, user_u_vertor)))
+        result = list(np.argsort(self.userSimilarityMatrix[u])[-self.K:])
         up_up = 0
         down_down = 0
         for v in result:
@@ -262,6 +252,8 @@ class SimilarityBaseRecommendation(Recommendation):
             print("第第%d个用户评分预测结束" % (i))
             print(time.strftime('%Y.%m.%d %H:%M:%S', time.localtime(time.time())))
         return predictMatrix
+
+
 
     # 求列表的中位数
     def Get_MedOfList(self, data):
@@ -333,7 +325,7 @@ if __name__ == '__main__':
     # gogogogogogogogo______test
     print(time.strftime('%Y.%m.%d %H:%M:%S', time.localtime(time.time())))
     # sbr = SimilarityBaseRecommendation(Hybird,Hybird,Hybird_test)
-    sbr = SimilarityBaseRecommendation(test, test_train, test_test)
-    # sbr = SimilarityBaseRecommendation(ml_100k, ml_100k_train, ml_100k_test)
+    # sbr = SimilarityBaseRecommendation(test, test_train, test_test)
+    sbr = SimilarityBaseRecommendation(ml_100k, ml_100k_train, ml_100k_test)
     # sbr = SimilarityBaseRecommendation(ml_1m,ml_1m_train,ml_1m_test)
     print(time.strftime('%Y.%m.%d %H:%M:%S', time.localtime(time.time())))

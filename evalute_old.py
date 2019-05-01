@@ -34,42 +34,13 @@ def Evaluate_HR(preditmatrix, testmatrix, top_k):
     HR = count / num_testsample
     return HR
 
-
-def HR_Generate_result(path, path_train, path_test, top_k):
+def HR_Generate_result( path, path_train, path_test,top_k):
     preditmatrix_bingxing = np.load(
         os.getcwd() + '\\out_file\\predictMatrix_{}_'.format(8) + os.path.basename(
             path_train) + '_bingxing.npy')
     rec = Recommendation(path, path_train, path_test)
 
-    return Evaluate_HR(preditmatrix_bingxing, rec.testMatrix, top_k)
-
-
-def Evaluate_Precision_AND_Recall(preditmatrix, testmatrix):
-    IRup = dict()
-    IRua = dict()
-    topK = 10
-    for (userid, itemid) in testmatrix.keys():
-        if userid not in IRua.keys():
-            user_u_vertor = np.array(list(preditmatrix[userid]))
-            IRup[userid] = np.argsort(user_u_vertor)[-topK:]
-            user_u_vertor_test = np.array(sp.dok_matrix.toarray(testmatrix)[userid])
-            IRua[userid] = np.argsort(user_u_vertor_test)[-topK:]
-    sum_precision, sum_recall, m = 0, 0, 0
-    for userid in IRua.keys():
-        m += 1
-        IRup_userid = list(IRup[userid])
-        IRua_userid = list(IRua[userid])
-        ret_list = list((set(IRup_userid).union(set(IRua_userid))) ^ (set(IRup_userid) ^ set(IRua_userid)))
-        sum_precision += len(ret_list) / len(IRup_userid)
-        sum_recall += len(ret_list) / len(IRua_userid)
-    Precision = sum_precision / m
-    Recall = sum_recall / m
-    return Precision, Recall
-
-
-def Evaluate_F1_measure(Precision, Recall):
-    return (2 * Precision * Recall) / (Precision + Recall)
-
+    return Evaluate_HR(preditmatrix_bingxing,rec.testMatrix,top_k)
 
 def Evaluate_MAE_AND_NMAE(preditmatrix, testmatrix):
     matrix_sub = sp.dok_matrix.copy(testmatrix)
@@ -137,7 +108,7 @@ if __name__ == '__main__':
 
     # MAE_Generate_resultFile(4, 20, 4, test, test_train, test_test)
 
-    print(HR_Generate_result(test, test_train, test_test, 5))
-    print(HR_Generate_result(test, test_train, test_test, 10))
+    print(HR_Generate_result(test, test_train, test_test,5))
+    print(HR_Generate_result(test, test_train, test_test,10))
 
     # MAE_Generate_resultFile(20, 20, 20, ml_100k, ml_100k_train, ml_100k_test)

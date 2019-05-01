@@ -14,15 +14,20 @@ class Recommendation():
     def __init__(self, file,train_file,test_file):
         # 获取用户数和物品数量
         self.num_users, self.num_items ,self.num_rating= self.Count_Num_Of_UserAndItem(file)
-        print(self.num_users)
-        print(self.num_items)
-        print(self.num_rating)
+        print('用户数：',self.num_users)
+        print('物品数：',self.num_items)
+        print('评分数：',self.num_rating)
         # 构建训练评分矩阵
         self.trainMatrix = self.Transform_csv_To_RatingMatrix(train_file)
         # 构建测试评分矩阵用于后期评估运算
         self.testMatrix = self.Transform_csv_To_RatingMatrix(test_file)
         # 评分矩阵参数
         self.ratingMax, self.ratingMim, self.num_scale = 5, 1, 5
+        # 生成每个用户评分了的物品集合 {user:[item1,item2]}
+        self.coItemDict = self.Generate_ratingItemDict_ForEachUser(self.trainMatrix)
+        # 每个用户评分均值
+        print('用户评分了的物品集合：')
+        print(self.coItemDict)
 
     # 统计总样本中用户数和物品数
     def Count_Num_Of_UserAndItem(self, ratedfile):
@@ -104,6 +109,14 @@ class Recommendation():
                 line = f.readline()
         return itemRatingDict
 
+    # 从评分矩阵中生成用户的评分了的物品列表 用户/物品
+    def Generate_ratingItemDict_ForEachUser(self, trainMatrix):
+        ratingItemList = dict()
+        for (userid, itemid) in trainMatrix.keys():
+            if userid not in ratingItemList.keys():
+                ratingItemList[userid] = set()
+            ratingItemList[userid].add(itemid)
+        return ratingItemList
 
 
 def SplitData_To_TrainandTest(datafile, M, k, seed):
@@ -129,33 +142,6 @@ def SplitData_To_TrainandTest(datafile, M, k, seed):
     f_test.close()
 
 
-if __name__ == '__main__':
-    csv_path = os.getcwd()+ '\\prepare_datasets\\Hybird_data.csv'
-    csv_path1 = 'E:\\0学业\\毕设\\useful_dataset\\m-100k\\m1-100k.csv'
-    test = os.getcwd() + '\\prepare_datasets\\test_99_400.base'
-    train_path = os.getcwd() + '\\prepare_datasets\\' + os.path.basename(csv_path)+'_train.csv'
-    test_path = os.getcwd() + '\\prepare_datasets\\' + os.path.basename(csv_path)+'_test.csv'
 
-    SplitData_To_TrainandTest(test, 10, 2, 1)
-    # paths = [csv_path3]
-    # for path in paths:
-    #     print('数据集：%s信息如下：' % (path))
-    #     Rc = Recommendation(path)
-    #     print(Rc.num_users)
-    #     print(Rc.num_items)
-    #     print(sp.dok_matrix.count_nonzero(Rc.trainMatrix))
-    #     print(Rc.trainMatrix)
-    #     print('--------')
-    #     print(Rc.testMatrix)
-    #     print(Rc.ratingMax)
-    #     print(Rc.ratingMim)
-    #     testmatrix = sp.dok_matrix((5, 6), dtype=np.float32)
-    #     testmatrix[0, 0] = 2
-    #     testmatrix[1, 1] = 4
-    #     testmatrix[2, 1] = 2
-    #     testmatrix[2, 2] = 3
-    #
-    #     testmatrix[4, 2] = 2
-    #     print(Rc.Evaluate_MAE(
-    #         [[3, 0, 4, 0, 0, 0], [0, 5, 0, 5, 5, 3], [3, 4, 4, 3, 4, 3], [1, 2, 1, 0, 2, 0], [1, 0, 5, 0, 0, 0]],
-    #         testmatrix))
+if __name__ == '__main__':
+    s=1
