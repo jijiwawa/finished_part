@@ -5,70 +5,60 @@ import time
 import re
 from Recommendation import Recommendation
 import os
-import heapq
 import random
 
 
-def Evaluate_HR(preditmatrix, testmatrix, top_k):
-    # 每个用户在测试集上商品个数
+def Evaluate_HR(preditmatrix, rec, top_k):
+    testmatrix= rec.testMatrix
     num_users, num_items = testmatrix.shape
-    # 生成每个用户的推荐列表TOP-5 { user_id:{item1,item2...},...}
+    # 生成每个用户的推荐列表TOP-K { user_id:{item1,item2...},...}
     each_user_topK_item = dict()
     TOP_K = top_k  # 5，10
 
     for userid in range(0, num_users):
         user_u_vertor = list(preditmatrix[userid])
         if userid not in each_user_topK_item.keys():
-            each_user_topK_item[userid] = list(map(user_u_vertor.index, heapq.nlargest(TOP_K, user_u_vertor)))
+            # each_user_topK_item[userid] = list(map(user_u_vertor.index, heapq.nlargest(TOP_K, user_u_vertor)))
+            each_user_topK_item[userid] = np.argsort(user_u_vertor)[-TOP_K:]
 
     # 判断testmatrix中的元素是否在each_user_topK_item中出现
     num_testsample = sp.dok_matrix.count_nonzero(testmatrix)
-    num_predict_in_testsample = np.zeros(num_users)
-    print(preditmatrix)
-    print(each_user_topK_item)
+    # print(preditmatrix)
+    # print(each_user_topK_item)
     count = 0
     for (userid, itemid) in testmatrix.keys():
-        if userid in each_user_topK_item.keys():
-            if itemid in each_user_topK_item[userid]:
-                count += 1
+        if testmatrix[userid, itemid] >= rec.user_ave_rating_dict[userid]:
+            if userid in each_user_topK_item.keys():
+                if itemid in each_user_topK_item[userid]:
+                    count += 1
+        else:
+            num_testsample -= 1
     HR = count / num_testsample
     return HR
 
 
-def HR_Generate_result(path, path_train, path_test, top_k):
-    preditmatrix_bingxing = np.load(
-        os.getcwd() + '\\out_file\\predictMatrix_{}_'.format(8) + os.path.basename(
-            path_train) + '_bingxing.npy')
+def Generate_HR_resultfile(K_start, K_end, K_step, path, path_train, path_test, top_k, dataname):
     rec = Recommendation(path, path_train, path_test)
-
-    return Evaluate_HR(preditmatrix_bingxing, rec.testMatrix, top_k)
-
-
-def Evaluate_Precision_AND_Recall(preditmatrix, testmatrix):
-    IRup = dict()
-    IRua = dict()
-    topK = 10
-    for (userid, itemid) in testmatrix.keys():
-        if userid not in IRua.keys():
-            user_u_vertor = np.array(list(preditmatrix[userid]))
-            IRup[userid] = np.argsort(user_u_vertor)[-topK:]
-            user_u_vertor_test = np.array(sp.dok_matrix.toarray(testmatrix)[userid])
-            IRua[userid] = np.argsort(user_u_vertor_test)[-topK:]
-    sum_precision, sum_recall, m = 0, 0, 0
-    for userid in IRua.keys():
-        m += 1
-        IRup_userid = list(IRup[userid])
-        IRua_userid = list(IRua[userid])
-        ret_list = list((set(IRup_userid).union(set(IRua_userid))) ^ (set(IRup_userid) ^ set(IRua_userid)))
-        sum_precision += len(ret_list) / len(IRup_userid)
-        sum_recall += len(ret_list) / len(IRua_userid)
-    Precision = sum_precision / m
-    Recall = sum_recall / m
-    return Precision, Recall
-
-
-def Evaluate_F1_measure(Precision, Recall):
-    return (2 * Precision * Recall) / (Precision + Recall)
+    K = K_start
+    result_file = os.getcwd() + '\\result\\' + dataname + '\\HR_TOP'+ str(top_k) + '_' + os.path.basename(path) + '.csv'
+    with open(result_file, 'w') as result_f:
+        if dataname == 'PCC':
+            result_f.write('PCC Model for Collaborative Filtering\n')
+            filename = 'PCC_predictMatrix'
+        if dataname == 'Hybird':
+            result_f.write('A Hybrid User Similarity Model for Collaborative Filtering\n')
+            filename = 'predictMatrix'
+        result_f.write('num_user:%d\nnum_items:%d\nranting:%d\nSparsity level:%.3f\n' % (
+            rec.num_users, rec.num_items, rec.num_rating, rec.num_rating / (rec.num_items * rec.num_users)))
+        result_f.write("%6.6s\t%6.6s\n" % ('K', 'MAE'))
+        while K <= K_end:
+            preditmatrix_bingxing = np.load(
+                os.getcwd() + '\\out_file\\' + dataname + '\\' + filename + '_{}_'.format(K) + os.path.basename(
+                    path_train) + '_bingxing.npy')
+            hr_result = Evaluate_HR(preditmatrix_bingxing, rec, top_k)
+            line = "%6.6s\t%6.6s\n" % (K, str(hr_result))
+            result_f.write(line)
+            K += K_step
 
 
 def Evaluate_MAE_AND_NMAE(preditmatrix, testmatrix):
@@ -97,19 +87,28 @@ def Evaluate_MAE_AND_NMAE(preditmatrix, testmatrix):
 def MAE_Generate_resultFile(K_start, K_end, K_step, path, path_train, path_test):
     rec = Recommendation(path, path_train, path_test)
     K = K_start
-    result_file = os.getcwd() + '\\result\\resultOfMAE_' + os.path.basename(path) + '.csv'
+    result_file = os.getcwd() + '\\result\\PCC\\MAE_' + os.path.basename(path) + '.csv'
+    # result_file = os.getcwd() + '\\result\\Hybird\\resultOfMAE_' + os.path.basename(path) + '.csv'
+
     with open(result_file, 'w') as result_f:
-        result_f.write('A Hybrid User Similarity Model for Collaborative Filtering\n')
+        result_f.write('PCC Model for Collaborative Filtering\n')
+        # result_f.write('A Hybrid User Similarity Model for Collaborative Filtering\n')
         result_f.write('num_user:%d\nnum_items:%d\nranting:%d\nSparsity level:%.3f\n' % (
             rec.num_users, rec.num_items, rec.num_rating, rec.num_rating / (rec.num_items * rec.num_users)))
-        result_f.write('{}'.format('K') + '\t' + 'MAE' + '\t' + 'NMAE' + '\n')
+        result_f.write("%6.6s\t%6.6s\t%6.6s\n" % ('K', 'MAE', 'NMAE'))
+
         while K <= K_end:
+            # pcc
             preditmatrix_bingxing = np.load(
-                os.getcwd() + '\\out_file\\predictMatrix_{}_'.format(K) + os.path.basename(
+                os.getcwd() + '\\out_file\\PCC\\PCC_predictMatrix_{}_'.format(K) + os.path.basename(
                     path_train) + '_bingxing.npy')
+            # Hybird
+            # preditmatrix_bingxing = np.load(
+            #     os.getcwd() + '\\out_file\\Hybird\\predictMatrix_{}_'.format(K) + os.path.basename(
+            #         path_train) + '_bingxing.npy')
             MAE_result, NMAE_result = Evaluate_MAE_AND_NMAE(preditmatrix_bingxing, rec.testMatrix)
             # "{} {}".format("hello", "world")
-            line = '{}'.format(K) + '\t' + str(MAE_result) + '\t' + str(NMAE_result) + '\n'
+            line = "%6.6s\t%6.6s\t%6.6s\n" % (K, str(MAE_result), str(NMAE_result))
             result_f.write(line)
             K += K_step
 
@@ -135,9 +134,13 @@ if __name__ == '__main__':
     ml_1m_train = os.getcwd() + '\\prepare_datasets\\ml-1m.train.rating'
     ml_1m_test = os.getcwd() + '\\prepare_datasets\\ml-1m.test.rating'
 
+    # MAE NMAE
     # MAE_Generate_resultFile(4, 20, 4, test, test_train, test_test)
-
-    print(HR_Generate_result(test, test_train, test_test, 5))
-    print(HR_Generate_result(test, test_train, test_test, 10))
-
     # MAE_Generate_resultFile(20, 20, 20, ml_100k, ml_100k_train, ml_100k_test)
+
+    # HR
+    Generate_HR_resultfile(4, 20, 4, test, test_train, test_test, 5, 'PCC')
+    Generate_HR_resultfile(4, 20, 4, test, test_train, test_test, 10, 'PCC')
+    # Generate_HR_resultfile(4, 20, 4, test, test_train, test_test, 5, 'Hybird')
+    # Generate_HR_resultfile(4, 20, 4, test, test_train, test_test, 10, 'Hybird')
+

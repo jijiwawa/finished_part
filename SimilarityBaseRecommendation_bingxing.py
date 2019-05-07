@@ -25,47 +25,31 @@ class SimilarityBaseRecommendation(Recommendation):
         print(self.itemRatingDict)
         # 生成物品相似度矩阵，用索引方便获取
         print('物品相似度矩阵：')
-        # self.itemSimialrityMatrix_Sitem = self.Generate_ItemSimilarity_Matrix()
-        # np.save(os.getcwd() + '\\out_file\\itemSimialrityMatrix_' + os.path.basename(train_file) + '_bingxing.npy',
-        #         self.itemSimialrityMatrix_Sitem)
+        self.itemSimialrityMatrix_Sitem = self.Generate_ItemSimilarity_Matrix()
+        np.save(os.getcwd() + '\\out_file\\Hybird\\itemSimialrityMatrix_' + os.path.basename(train_file) + '_bingxing.npy',
+                self.itemSimialrityMatrix_Sitem)
         self.itemSimialrityMatrix_Sitem = np.load(
-            os.getcwd() + '\\out_file\\itemSimialrityMatrix_' +  os.path.basename(train_file)+'_bingxing.npy')
+            os.getcwd() + '\\out_file\\Hybird\\itemSimialrityMatrix_' +  os.path.basename(train_file)+'_bingxing.npy')
         print(self.itemSimialrityMatrix_Sitem)
         # 生成用户相似度矩阵
         print('用户相似度矩阵：')
-        # self.userSimilarityMatrix = self.Generate_UserSimilarity_Matrix()
-        # np.save(os.getcwd() + '\\out_file\\userSimialrityMatrix_' + os.path.basename(train_file) + '_bingxing.npy',
-        #         self.userSimilarityMatrix)
+        self.userSimilarityMatrix = self.Generate_UserSimilarity_Matrix()
+        np.save(os.getcwd() + '\\out_file\\Hybird\\userSimialrityMatrix_' + os.path.basename(train_file) + '_bingxing.npy',
+                self.userSimilarityMatrix)
         self.userSimilarityMatrix = np.load(
-            os.getcwd() + '\\out_file\\userSimialrityMatrix_' + os.path.basename(train_file) + '_bingxing.npy')
+            os.getcwd() + '\\out_file\\Hybird\\userSimialrityMatrix_' + os.path.basename(train_file) + '_bingxing.npy')
         print(self.userSimilarityMatrix)
         # 生成评分矩阵
-        self.K = 20
-        while self.K <= 100:
+        self.K = 4
+        while self.K <= 20:
             self.predictMatrix = self.Generate_PredictRating_Matrix()
-            np.save(os.getcwd() + '\\out_file\\predictMatrix_' + str(self.K) + '_' + os.path.basename(
+            np.save(os.getcwd() + '\\out_file\\Hybird\\predictMatrix_' + str(self.K) + '_' + os.path.basename(
                 train_file) + '_bingxing.npy',
                     self.predictMatrix)
             print('预测评分矩阵：')
             print(self.predictMatrix)
-            self.K += 20
+            self.K += 4
 
-
-
-    # 从csv中生成物品的评分字典  {物品id:{评分}}
-    def Generate_ratingDict_ForEachItem(self, file):
-        itemRatingDict = dict()
-        with open(file, "r") as f:
-            line = f.readline()
-            while line != None and line != "":
-                pattern = r'[,|\s|:]+'
-                arr = re.split(pattern, line)
-                userId, itemId, rating = int(float(arr[0])), int(float(arr[1])), int(float(arr[2]))
-                if itemId not in itemRatingDict.keys():
-                    itemRatingDict[itemId] = []
-                itemRatingDict[itemId].append(rating)
-                line = f.readline()
-        return itemRatingDict
 
     # The PSS model computes the user similarity value only based on the co-rated items
     # function S1 based on PSS model
@@ -214,20 +198,26 @@ class SimilarityBaseRecommendation(Recommendation):
     def Generate_Predicti_User_U_OnItem_I(self, u, i):
         print("(%d,%d)用户对物品评分预测" % (u, i))
         print(time.strftime('%Y.%m.%d %H:%M:%S', time.localtime(time.time())))
-        ave_u = sum(list(self.trainMatrix[u].toarray()[0])) / len(self.trainMatrix[u])
-        # user_u_vertor = list(self.userSimilarityMatrix[u])
-        # 前k相似用户result
-        # result = list(map(user_u_vertor.index, heapq.nlargest(self.K, user_u_vertor)))
-        result = list(np.argsort(self.userSimilarityMatrix[u])[-self.K:])
-        up_up = 0
-        down_down = 0
-        for v in result:
-            down_down += math.fabs(self.userSimilarityMatrix[u][v])
-            if i in self.coItemDict[v]:
-                ave_v = sum(list(self.trainMatrix[v].toarray()[0])) / len(self.trainMatrix[v])
-                rvi = self.trainMatrix[v, i]
-                up_up += self.userSimilarityMatrix[u][v] * (rvi - ave_v)
-        return ave_u + up_up / down_down
+        if self.trainMatrix[u, i] == 0 or self.trainMatrix[u, i] == None:
+            ave_u = sum(list(self.trainMatrix[u].toarray()[0])) / len(self.trainMatrix[u])
+            # user_u_vertor = list(self.userSimilarityMatrix[u])
+            # 前k相似用户result
+            # result = list(map(user_u_vertor.index, heapq.nlargest(self.K, user_u_vertor)))
+            result = list(np.argsort(self.userSimilarityMatrix[u])[-self.K:])
+
+            up_up = 0
+            down_down = 0
+            for v in result:
+                down_down += math.fabs(self.userSimilarityMatrix[u][v])
+                if i in self.coItemDict[v]:
+                    ave_v = sum(list(self.trainMatrix[v].toarray()[0])) / len(self.trainMatrix[v])
+                    rvi = self.trainMatrix[v, i]
+                    up_up += self.userSimilarityMatrix[u][v] * (rvi - ave_v)
+            return ave_u + up_up / down_down
+        else:
+            print('用户%d对物品%d已有评分' % (u, i))
+            # 返回-1 是为了方便后期计算命中率
+            return -1
 
     # 生成预测评分矩阵
     def Generate_PredictRating_Matrix(self):
@@ -325,7 +315,7 @@ if __name__ == '__main__':
     # gogogogogogogogo______test
     print(time.strftime('%Y.%m.%d %H:%M:%S', time.localtime(time.time())))
     # sbr = SimilarityBaseRecommendation(Hybird,Hybird,Hybird_test)
-    # sbr = SimilarityBaseRecommendation(test, test_train, test_test)
-    sbr = SimilarityBaseRecommendation(ml_100k, ml_100k_train, ml_100k_test)
+    sbr = SimilarityBaseRecommendation(test, test_train, test_test)
+    # sbr = SimilarityBaseRecommendation(ml_100k, ml_100k_train, ml_100k_test)
     # sbr = SimilarityBaseRecommendation(ml_1m,ml_1m_train,ml_1m_test)
     print(time.strftime('%Y.%m.%d %H:%M:%S', time.localtime(time.time())))
