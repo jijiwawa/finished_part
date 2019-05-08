@@ -50,7 +50,7 @@ def Generate_HR_resultfile(K_start, K_end, K_step, path, path_train, path_test, 
             filename = 'predictMatrix'
         result_f.write('num_user:%d\nnum_items:%d\nranting:%d\nSparsity level:%.3f\n' % (
             rec.num_users, rec.num_items, rec.num_rating, rec.num_rating / (rec.num_items * rec.num_users)))
-        result_f.write("%6.6s\t%6.6s\n" % ('K', 'MAE'))
+        result_f.write("%6.6s\t%6.6s\n" % ('K', 'HR'))
         while K <= K_end:
             preditmatrix_bingxing = np.load(
                 os.getcwd() + '\\out_file\\' + dataname + '\\' + filename + '_{}_'.format(K) + os.path.basename(
@@ -139,8 +139,8 @@ if __name__ == '__main__':
     # MAE_Generate_resultFile(20, 20, 20, ml_100k, ml_100k_train, ml_100k_test)
 
     # HR
-    Generate_HR_resultfile(4, 20, 4, test, test_train, test_test, 5, 'PCC')
-    Generate_HR_resultfile(4, 20, 4, test, test_train, test_test, 10, 'PCC')
-    # Generate_HR_resultfile(4, 20, 4, test, test_train, test_test, 5, 'Hybird')
-    # Generate_HR_resultfile(4, 20, 4, test, test_train, test_test, 10, 'Hybird')
+    # Generate_HR_resultfile(4, 20, 4, test, test_train, test_test, 5, 'PCC')
+    # Generate_HR_resultfile(4, 20, 4, test, test_train, test_test, 10, 'PCC')
+    Generate_HR_resultfile(4, 20, 4, test, test_train, test_test, 5, 'Hybird')
+    Generate_HR_resultfile(4, 20, 4, test, test_train, test_test, 10, 'Hybird')
 
