@@ -7,6 +7,7 @@ import time
 import os
 import re
 from Recommendation import Recommendation, get_dataset_path
+from datetime import datetime
 import multiprocessing
 
 
@@ -37,9 +38,14 @@ class PCC_Recommendation(Recommendation):
 
     def Generate_pccMatrix(self):
         pccMatrix = np.zeros((self.num_users, self.num_users), dtype=np.float32)
+        time_begin = datetime.now()
         for u in range(self.num_users):
-            for v in range(self.num_users):
+            for v in range(u+1,self.num_users):
                 pccMatrix[u][v] = self.PCC(u, v)
+                pccMatrix[v][u] = pccMatrix[u][v]
+        time_end = datetime.now()
+        print('计算pcc所花时间',time_end-time_begin)
+
         return pccMatrix
 
     def PCC(self, u, v):

@@ -49,7 +49,9 @@ def get_Userweight_variable(name, shape, regularizer):
     return weights_user
 
 
-def get_Itemweight_variable(name, shape, regularizer):
+def \
+        \
+        get_Itemweight_variable(name, shape, regularizer):
     weights_item = tf.get_variable(name, shape,
                                    initializer=tf.truncated_normal_initializer(mean=0, stddev=0.01))
     if regularizer != None:
@@ -64,10 +66,10 @@ def variable_summaries(var, name):
         # 计算变量的平均值，并定义生成平均值信息日志的操作。记录变量平均值信息的日志标签名为'mean/'+name，其中mean为命名空间，/是
         # 命名空间的分隔符。name则给出了当前监控指标属于哪一个变量
         mean = tf.reduce_mean(var)
-        tf.summary.scalar('mean/' + name, mean)
+        # tf.summary.scalar('mean/' + name, mean)
         # 计算变量的标准差，并定义生成其日志的操作
         stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
-        tf.summary.scalar('stddev/' + name, stddev)
+        # tf.summary.scalar('stddev/' + name, stddev)
 
 
 # 定义神经网络模型
@@ -139,7 +141,7 @@ if __name__ == '__main__':
     batch_size = 256  # batch大小
     learning_rate = 0.0001  # 学习率
     maxR = recommemdation.ratingMax  # 最大评分
-    negative_radio = 7  # 一个正样本，negative_radio个负样本
+    negative_radio = 1  # 一个正样本，negative_radio个负样本
     layer_dimension = [128, 64]  # 每层隐藏层的输出维度
 
     # 隐藏层层数N
@@ -160,20 +162,24 @@ if __name__ == '__main__':
     y = get_inference(user_vector, item_vector, recommemdation, regularizer, keep_prob)
 
     # 定义损失函数和反向传播算法 y_ 标准答案 y 预测答案
-    with tf.name_scope('cross_entropy'):
+    # with tf.name_scope('cross_entropy'):
         # ce
-        # cross_entropy = y_ * tf.log(y) + (1 - y_) * tf.log(1 - tf.where(tf.equal(y,1),1+1.0e-6,y))
-        loss1 = tf.reduce_sum(tf.square(y-y_)) + tf.add_n(tf.get_collection('losses'))
-        tf.summary.scalar('loss', loss1)
+        # cross_entropy = -tf.reduce_sum(y_ * tf.log(y) + (1 - y_) * tf.log(1 - y)) + tf.add_n(
+        #     tf.get_collection('losses'))
+        # tf.summary.scalar('cross_entropy', cross_entropy)
 
-    with tf.name_scope('n_cross_entropy'):
+    with tf.name_scope('square_loss'):
+        loss = tf.reduce_sum(tf.square(y - y_)) + tf.add_n(tf.get_collection('losses'))
+        tf.summary.scalar('loss', loss)
+
+    # with tf.name_scope('n_cross_entropy'):
         # nce 论文提出的损失函数
-        loss = -tf.reduce_sum(y_ / maxR * tf.log(y) + (1 - y_ / maxR) * tf.log(1 - y)) + tf.add_n(
-            tf.get_collection('losses'))
-        tf.summary.scalar('n_cross_entropy', loss)
+        # n_cross_entropy = -tf.reduce_sum(y_ / maxR * tf.log(y) + (1 - y_ / maxR) * tf.log(1 - y)) + tf.add_n(
+        #     tf.get_collection('losses'))
+        # tf.summary.scalar('n_cross_entropy', n_cross_entropy)
 
-    with tf.name_scope('train_step'):
-        train_step = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
+    # with tf.name_scope('train_step'):
+    train_step = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
 
     with tf.name_scope('accuracy'):
         accuracy = tf.reduce_mean(tf.abs(y - y_))
@@ -204,7 +210,7 @@ if __name__ == '__main__':
         saver = tf.train.Saver()
         # sess.run(input_embedding, feed_dict={input_ids: [1, 2, 3, 0, 3, 2, 1]})
         # 迭代更新参数
-        STEPS = 1001  # 设定训练轮次。
+        STEPS = 701  # 设定训练轮次。
         print('开始迭代')
         acc_min = 5
         for i in range(STEPS):
@@ -220,7 +226,7 @@ if __name__ == '__main__':
                 end = min(start + batch_size, dataset_size)
                 sess.run(train_step, feed_dict={user_index: np.array(user_input)[start:end],
                                                 item_index: np.array(item_input)[start:end],
-                                                y_: np.array(labels)[start:end], keep_prob: 0.85555555555})
+                                                y_: np.array(labels)[start:end], keep_prob: 0.8999999})
                 accuracy_record, n_cross_entropy_score = sess.run([accuracy, loss], feed_dict={
                     user_index: np.array(user_input)[start:end],
                     item_index: np.array(item_input)[start:end],
@@ -253,6 +259,6 @@ if __name__ == '__main__':
                     acc_min = acc_test
                 summary_writer.add_summary(summary, i)
                 summary_writer_test.add_summary(summary_test, i)
-        print('acc_test_min:',acc_min)
+        print('acc_test_min:', acc_min)
         summary_writer.close()
         summary_writer_test.close()

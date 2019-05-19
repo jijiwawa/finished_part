@@ -104,7 +104,11 @@ if __name__ == '__main__':
             start = end
 
         MAE = sum / count_user
+        NMAE = sum / (count_user*4)
+
         print('MAE:',MAE)
+        print('NMAE:',NMAE)
+
     # '''
     # HR 生成预测评分矩阵
     '''

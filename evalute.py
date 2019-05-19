@@ -9,7 +9,7 @@ import random
 
 
 def Evaluate_HR(preditmatrix, rec, top_k):
-    testmatrix= rec.testMatrix
+    testmatrix = rec.testMatrix
     num_users, num_items = testmatrix.shape
     # 生成每个用户的推荐列表TOP-K { user_id:{item1,item2...},...}
     each_user_topK_item = dict()
@@ -40,7 +40,8 @@ def Evaluate_HR(preditmatrix, rec, top_k):
 def Generate_HR_resultfile(K_start, K_end, K_step, path, path_train, path_test, top_k, dataname):
     rec = Recommendation(path, path_train, path_test)
     K = K_start
-    result_file = os.getcwd() + '\\result\\' + dataname + '\\HR_TOP'+ str(top_k) + '_' + os.path.basename(path) + '.csv'
+    result_file = os.getcwd() + '\\result\\' + dataname + '\\HR_TOP' + str(top_k) + '_' + os.path.basename(
+        path) + '.csv'
     with open(result_file, 'w') as result_f:
         if dataname == 'PCC':
             result_f.write('PCC Model for Collaborative Filtering\n')
@@ -84,28 +85,34 @@ def Evaluate_MAE_AND_NMAE(preditmatrix, testmatrix):
     return MAE, NMAE
 
 
-def MAE_Generate_resultFile(K_start, K_end, K_step, path, path_train, path_test):
+def MAE_Generate_resultFile(K_start, K_end, K_step, path, path_train, path_test, algorithmname):
     rec = Recommendation(path, path_train, path_test)
     K = K_start
-    result_file = os.getcwd() + '\\result\\PCC\\MAE_' + os.path.basename(path) + '.csv'
-    # result_file = os.getcwd() + '\\result\\Hybird\\resultOfMAE_' + os.path.basename(path) + '.csv'
+    if algorithmname == 'PCC':
+        result_file = os.getcwd() + '\\result\\PCC\\MAE_' + os.path.basename(path) + '.csv'
+    if algorithmname == 'Hybird':
+        result_file = os.getcwd() + '\\result\\Hybird\\resultOfMAE_' + os.path.basename(path) + '.csv'
 
     with open(result_file, 'w') as result_f:
-        result_f.write('PCC Model for Collaborative Filtering\n')
-        # result_f.write('A Hybrid User Similarity Model for Collaborative Filtering\n')
+        if algorithmname == 'PCC':
+            result_f.write('PCC Model for Collaborative Filtering\n')
+        if algorithmname == 'Hybird':
+            result_f.write('A Hybrid User Similarity Model for Collaborative Filtering\n')
         result_f.write('num_user:%d\nnum_items:%d\nranting:%d\nSparsity level:%.3f\n' % (
             rec.num_users, rec.num_items, rec.num_rating, rec.num_rating / (rec.num_items * rec.num_users)))
         result_f.write("%6.6s\t%6.6s\t%6.6s\n" % ('K', 'MAE', 'NMAE'))
 
         while K <= K_end:
             # pcc
-            preditmatrix_bingxing = np.load(
-                os.getcwd() + '\\out_file\\PCC\\PCC_predictMatrix_{}_'.format(K) + os.path.basename(
-                    path_train) + '_bingxing.npy')
+            if algorithmname == 'PCC':
+                preditmatrix_bingxing = np.load(
+                    os.getcwd() + '\\out_file\\PCC\\PCC_predictMatrix_{}_'.format(K) + os.path.basename(
+                        path_train) + '_bingxing.npy')
             # Hybird
-            # preditmatrix_bingxing = np.load(
-            #     os.getcwd() + '\\out_file\\Hybird\\predictMatrix_{}_'.format(K) + os.path.basename(
-            #         path_train) + '_bingxing.npy')
+            if algorithmname == 'Hybird':
+                preditmatrix_bingxing = np.load(
+                    os.getcwd() + '\\out_file\\Hybird\\predictMatrix_{}_'.format(K) + os.path.basename(
+                        path_train) + '_bingxing.npy')
             MAE_result, NMAE_result = Evaluate_MAE_AND_NMAE(preditmatrix_bingxing, rec.testMatrix)
             # "{} {}".format("hello", "world")
             line = "%6.6s\t%6.6s\t%6.6s\n" % (K, str(MAE_result), str(NMAE_result))
@@ -135,12 +142,11 @@ if __name__ == '__main__':
     ml_1m_test = os.getcwd() + '\\prepare_datasets\\ml-1m.test.rating'
 
     # MAE NMAE
-    # MAE_Generate_resultFile(4, 20, 4, test, test_train, test_test)
-    # MAE_Generate_resultFile(20, 20, 20, ml_100k, ml_100k_train, ml_100k_test)
+    # MAE_Generate_resultFile(4, 20, 4, test, test_train, test_test,'PCC')
+    MAE_Generate_resultFile(4, 20, 4, test, test_train, test_test,'Hybird')
 
     # HR
     # Generate_HR_resultfile(4, 20, 4, test, test_train, test_test, 5, 'PCC')
     # Generate_HR_resultfile(4, 20, 4, test, test_train, test_test, 10, 'PCC')
     Generate_HR_resultfile(4, 20, 4, test, test_train, test_test, 5, 'Hybird')
     Generate_HR_resultfile(4, 20, 4, test, test_train, test_test, 10, 'Hybird')
-
